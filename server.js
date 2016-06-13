@@ -1,20 +1,14 @@
 "use strict";
 
 var http = require("http"),
-	express = require("express");
+	express = require("express"),
+	socketIo = require("socket.io"),
+	users = 0;
 
 const app = express();
 app.set("view engine", "jade");
 
 app.use(express.static("./public"));
-
-app.use((request, response, next) => {
-	console.log("in middleware 1");
-	next();
-	console.log("out of middleware 2");
-
-});
-
 
 
 app.get("/", (request, response) => {
@@ -25,14 +19,32 @@ app.get("/", (request, response) => {
 
 app.get("/home",(request, response) => {
 
-	response.render("index", {title: "title!"});
+	response.render("index", {title: "title!", users: users});
 
 });
 
 const server = new http.Server(app);
+const io = socketIo(server);
+
+io.on("connection", socket => {
+	console.log("Client connected!");
+	users++;
+	socket.on("chat:add", data => {
+		console.log(data);
+		io.emit("chat:added", data);
+	});
+
+	socket.on("disconnect", () => {
+		console.log("Client disconnected");
+		users--;
+
+	});
+
+});
 
 server.listen(3000, () => {
 
 	console.log("server started");
+	
 
 });
